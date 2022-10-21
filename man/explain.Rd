@@ -10,9 +10,9 @@
 \alias{explain.lgb.Booster}
 \title{Fast approximate Shapley values}
 \usage{
-explain_prep(object, X, column, newdata = NULL)
+explain_prep(object, X, column, newdata = NULL, replace = TRUE)
 
-explain_column(object, X, column, pred_wrapper, newdata = NULL)
+explain_column(object, X, column, pred_wrapper, newdata = NULL, replace = TRUE)
 
 explain(object, ...)
 
@@ -26,6 +26,7 @@ explain(object, ...)
   adjust = FALSE,
   baseline = NULL,
   parallel = FALSE,
+  replace = TRUE,
   ...
 )
 
@@ -79,6 +80,9 @@ containing ONLY the feature columns for the observation(s) of interest; that
 is, the observation(s) you want to compute explanations for. Default is
 \code{NULL} which will produce approximate Shapley values for all the rows in
 \code{X} (i.e., the training data).}
+
+\item{replace}{Should sampling be done with replacement? Default is \code{TRUE}.
+The rows are randomly sampled from full data \code{X} or \code{newdata}.}
 
 \item{pred_wrapper}{Prediction function that requires two arguments,
 \code{object} and \code{newdata}. \strong{NOTE:} This argument is required
