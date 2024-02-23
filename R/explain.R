@@ -10,7 +10,7 @@
 #' @rdname explain
 #'
 #' @export
-explain_prep <- function(object, X, column, newdata = NULL) {
+explain_prep <- function(object, X, column, newdata = NULL, replace = TRUE) {
 
   # Check types
   if (!is.null(newdata) && !identical(class(X), class(newdata))) {
@@ -30,11 +30,11 @@ explain_prep <- function(object, X, column, newdata = NULL) {
   
   # Generate original and sampled feature instances
   if (is.null(newdata)) {  # FIXME: Should sampling be done with replacement?
-    W <- X[sample(n, replace = TRUE), ]  
+    W <- X[sample(n, replace = replace), ]
     O <- genOMat(n, p)
   } else {
-    W <- X[sample(n, size = nrow(newdata), replace = TRUE), , drop = FALSE]  # randomly sample rows from full X
-    O <- genOMat(n, p)[sample(n, size = nrow(newdata), replace = TRUE), , drop = FALSE]
+    W <- X[sample(n, size = nrow(newdata), replace = replace), , drop = FALSE]  # randomly sample rows from full X
+    O <- genOMat(n, p)[sample(n, size = nrow(newdata), replace = replace), , drop = FALSE]
     X <- newdata  # observations of interest
   }
   
@@ -87,8 +87,8 @@ explain_prep <- function(object, X, column, newdata = NULL) {
 #' @rdname explain
 #'
 #' @export
-explain_column <- function(object, X, column, pred_wrapper, newdata = NULL) {
-  B <- explain_prep(object, X, column, newdata = NULL)
+explain_column <- function(object, X, column, pred_wrapper, newdata = NULL, replace = TRUE) {
+  B <- explain_prep(object, X, column, newdata = NULL, replace = TRUE)
 
   # Return differences in predictions
   pred_wrapper(object, newdata = B[[1L]]) -
@@ -165,6 +165,9 @@ explain_column <- function(object, X, column, pred_wrapper, newdata = NULL) {
 #' is convenient, for example, when using [shapviz::shapviz()] for plotting.
 #' Default is `TRUE`.
 #' 
+#' @param replace Should sampling be done with replacement? Default is \code{TRUE}.
+#' The rows are randomly sampled from full data \code{X} or \code{newdata}.
+#'
 #' @param parallel Logical indicating whether or not to compute the approximate
 #' Shapley values in parallel across features; default is `FALSE`. **NOTE:**
 #' setting `parallel = TRUE` requires setting up an appropriate (i.e., 
@@ -251,7 +254,7 @@ explain <- function(object, ...) {
 explain.default <- function(object, feature_names = NULL, X = NULL, nsim = 1, 
                             pred_wrapper = NULL, newdata = NULL, adjust = FALSE,
                             baseline = NULL, shap_only = TRUE, parallel = FALSE, 
-                            ...) {
+                            replace = TRUE, ...) {
   
   # Compute baseline/average training prediction (fnull) and predictions 
   # associated with each explanation (fx); if `adjust = FALSE`, then the 
@@ -344,7 +347,7 @@ explain.default <- function(object, feature_names = NULL, X = NULL, nsim = 1,
     phis.stats <- foreach(i = feature_names, .combine = "acomb", ...) %.do% {
       reps <- replicate(nsim, {  # replace later with vapply()
         explain_column(object, X = X, column = i, pred_wrapper = pred_wrapper,
-                       newdata = newdata)
+                       newdata = newdata, replace = replace)
       })
       if (is.matrix(reps)) {
         # abind(rowMeans(reps), apply(reps, MARGIN = 1, FUN = var), along = 2)
@@ -384,7 +387,7 @@ explain.default <- function(object, feature_names = NULL, X = NULL, nsim = 1,
     phis <- foreach(i = feature_names, .combine = 'cbind', ...) %.do% {
       reps <- replicate(nsim, {  # replace later with vapply()
         explain_column(object, X = X, column = i, pred_wrapper = pred_wrapper,
-                       newdata = newdata)
+                       newdata = newdata, replace = replace)
       })
       if (is.matrix(reps)) {
         rowMeans(reps)
